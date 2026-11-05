@@ -1,498 +1,1318 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-Hant-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="跟著圓圈的起伏練習呼吸：延長吐氣、共振呼吸、方塊呼吸、4-7-8、循環嘆息。含開始前安頓、結束後自然呼吸、柔和提示音與安全提醒。">
+<meta name="theme-color" content="#0b1120">
 <title>呼吸練習引導</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%230b1120'/%3E%3Ccircle cx='32' cy='32' r='17' fill='%236ee7b7'/%3E%3C/svg%3E">
 <style>
-  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  *,*::before,*::after{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  body,h1,h2,p,ul,fieldset,legend{margin:0;padding:0}
+  [hidden]{display:none !important}
 
   :root{
+    color-scheme:dark;
     --bg:#0b1120;
-    --card:rgba(255,255,255,.04);
-    --border:rgba(255,255,255,.08);
-    --text:#c5cdd8;
-    --text-dim:#6b7a8d;
+    --surface:rgba(255,255,255,.04);
+    --surface-2:rgba(255,255,255,.07);
+    --border:rgba(255,255,255,.09);
+    --border-strong:rgba(255,255,255,.2);
+    --text:#d5dce6;
+    --text-dim:#97a6b8;
     --accent:#5eadf2;
     --inhale:#6ee7b7;
-    --hold:#facc15;
+    --hold:#f2c879;
     --exhale:#a78bfa;
-    --glow-inhale:rgba(110,231,183,.25);
-    --glow-hold:rgba(250,204,21,.2);
-    --glow-exhale:rgba(167,139,250,.25);
+    --rest:#7dd3fc;
+    --warn:#f3d18a;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
   }
 
   body{
-    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
-    background:var(--bg);
+    min-height:100vh;min-height:100dvh;
+    display:flex;flex-direction:column;
+    background-color:var(--bg);
+    background-image:radial-gradient(120% 70% at 50% 0%,#121c31 0%,rgba(11,17,32,0) 65%);
     color:var(--text);
-    min-height:100vh;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    overflow:hidden;
+    font-family:var(--font);line-height:1.6;
+    -webkit-tap-highlight-color:transparent;
   }
 
-  /* ── ambient background particles ── */
-  .ambient{position:fixed;inset:0;pointer-events:none;z-index:0}
+  .sr-only,
+  body[data-view="exercise"] .title{
+    position:absolute !important;width:1px;height:1px;padding:0;margin:-1px;
+    overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0;
+  }
+
+  /* ── 背景光點：少量、緩慢、低調 ── */
+  .ambient{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;transition:opacity 2s}
   .ambient span{
-    position:absolute;border-radius:50%;opacity:.12;
-    animation:float linear infinite;
+    position:absolute;bottom:-40vh;border-radius:50%;
+    background:radial-gradient(circle,var(--c) 0%,transparent 70%);
+    animation:drift-l linear infinite;will-change:transform;
   }
-  @keyframes float{
-    0%{transform:translateY(100vh) scale(0)}
-    50%{opacity:.18}
-    100%{transform:translateY(-10vh) scale(1);opacity:0}
-  }
+  .ambient span:nth-child(even){animation-name:drift-r}
+  /* 關鍵影格不用 var()，才能交給合成執行緒，不佔主執行緒 */
+  @keyframes drift-l{from{transform:translate3d(0,0,0)}to{transform:translate3d(-6vw,-150vh,0)}}
+  @keyframes drift-r{from{transform:translate3d(0,0,0)}to{transform:translate3d(6vw,-150vh,0)}}
+  /* 練習時背景靜止、調暗：畫面上唯一在動的，應該只有呼吸 */
+  body[data-view="exercise"] .ambient{opacity:.4}
+  body[data-view="exercise"] .ambient span{animation-play-state:paused}
 
-  /* ── container ── */
+  /* ── 版面：內容不足一屏時置中，超過時可捲動（不會被裁切） ── */
   .app{
     position:relative;z-index:1;
-    width:100%;max-width:460px;
-    padding:2rem 1.5rem;
-    display:flex;flex-direction:column;align-items:center;gap:2rem;
+    width:100%;max-width:480px;margin:auto;
+    padding:1.75rem 1rem 2rem;
+    display:flex;flex-direction:column;align-items:center;gap:1.5rem;
   }
-
-  h1{
-    font-size:1.5rem;font-weight:600;letter-spacing:.04em;
+  .title{
+    font-size:1.45rem;font-weight:600;letter-spacing:.06em;
     background:linear-gradient(135deg,var(--inhale),var(--accent),var(--exhale));
-    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
   }
 
-  /* ── settings panel ── */
+  /* ── 設定 ── */
   .settings{
-    width:100%;
-    background:var(--card);border:1px solid var(--border);
-    border-radius:1rem;padding:1.5rem;
-    display:grid;grid-template-columns:1fr 1fr;gap:1rem;
-    backdrop-filter:blur(12px);
+    width:100%;display:flex;flex-direction:column;gap:1.1rem;
+    background:rgba(15,23,42,.72);border:1px solid var(--border);border-radius:1.25rem;
+    padding:1.25rem;
   }
-  .settings.hidden{display:none}
+  fieldset{border:0;min-width:0}
+  .section-label{font-size:.8rem;color:var(--text-dim);letter-spacing:.04em;margin-bottom:.6rem}
 
-  .field{display:flex;flex-direction:column;gap:.35rem}
-  .field label{font-size:.78rem;color:var(--text-dim);letter-spacing:.03em}
-  .field input{
-    background:rgba(255,255,255,.06);border:1px solid var(--border);
-    border-radius:.5rem;padding:.55rem .75rem;
-    color:#fff;font-size:1rem;text-align:center;
-    outline:none;transition:border .2s;
-  }
-  .field input:focus{border-color:var(--accent)}
-
-  .preset-row{
-    grid-column:1/-1;display:flex;gap:.5rem;flex-wrap:wrap;
-    justify-content:center;margin-bottom:.25rem;
-  }
+  .preset-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem}
+  @media (min-width:430px){.preset-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
   .preset{
-    background:rgba(255,255,255,.06);border:1px solid var(--border);
-    border-radius:2rem;padding:.35rem .85rem;
-    color:var(--text-dim);font-size:.75rem;cursor:pointer;
-    transition:all .2s;
+    position:relative;display:flex;flex-direction:column;gap:.1rem;
+    padding:.6rem .7rem;border-radius:.8rem;border:1px solid var(--border);
+    background:rgba(255,255,255,.025);cursor:pointer;touch-action:manipulation;
+    transition:border-color .2s,background-color .2s;
   }
-  .preset:hover{border-color:var(--accent);color:var(--accent)}
+  .preset input{position:absolute;opacity:0;width:1px;height:1px;margin:0;pointer-events:none}
+  .preset.is-selected{border-color:var(--accent);background:rgba(94,173,242,.12)}
+  .preset:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+  .p-name{font-size:.95rem;font-weight:600;color:var(--text)}
+  .p-rhythm{font-size:.78rem;color:var(--text);font-variant-numeric:tabular-nums}
+  .p-tag{font-size:.74rem;color:var(--text-dim)}
+  .tok{white-space:nowrap}
+
+  .guide{font-size:.86rem;line-height:1.75;color:var(--text-dim);text-wrap:pretty}
+
+  .custom{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem}
+  .stepper{display:flex;flex-direction:column;gap:.35rem;min-width:0}
+  .stepper label{font-size:.8rem;color:var(--text-dim)}
+  .st-ctrl{
+    display:flex;align-items:center;height:2.75rem;
+    border:1px solid var(--border);border-radius:.7rem;background:rgba(255,255,255,.05);
+    overflow:hidden;transition:border-color .2s,box-shadow .2s;
+  }
+  .st-ctrl:focus-within{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+  .st-btn{
+    flex:none;width:2.6rem;height:100%;border:0;background:transparent;
+    color:var(--text);font:inherit;font-size:1.25rem;line-height:1;cursor:pointer;touch-action:manipulation;
+  }
+  .st-btn[aria-disabled="true"]{opacity:.3;cursor:default}
+  .st-btn:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+  .st-ctrl input{
+    flex:1;min-width:0;width:100%;height:100%;border:0;background:transparent;
+    color:#fff;font:inherit;font-size:1.1rem;text-align:center;font-variant-numeric:tabular-nums;
+    -moz-appearance:textfield;appearance:textfield;
+  }
+  .st-ctrl input:focus{outline:none}
+  .st-ctrl input::-webkit-outer-spin-button,
+  .st-ctrl input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .st-unit{flex:none;font-size:.75rem;color:var(--text-dim);padding-right:.1rem}
+
+  .length{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem;align-items:end}
+  .estimate{display:flex;flex-direction:column;padding-bottom:.15rem;font-variant-numeric:tabular-nums}
+  .est-main{font-size:.9rem;color:var(--text)}
+  .est-sub{font-size:.76rem;color:var(--text-dim)}
+
+  .hints{list-style:none;display:flex;flex-direction:column;gap:.4rem}
+  .hints:empty{display:none}
+  .hints li{
+    font-size:.8rem;line-height:1.6;color:var(--warn);
+    background:rgba(243,209,138,.07);border:1px solid rgba(243,209,138,.2);
+    border-radius:.6rem;padding:.5rem .7rem;
+  }
+
+  .options{border-top:1px solid var(--border);padding-top:.9rem}
+  .options summary{cursor:pointer;list-style:none;border-radius:.4rem}
+  .options summary::-webkit-details-marker{display:none}
+  .sum-row{display:flex;align-items:center;gap:.75rem;font-size:.9rem}
+  .sum-row>span:first-child{flex:none;white-space:nowrap}
+  .options-summary{margin-left:auto;font-size:.76rem;color:var(--text-dim);text-align:right}
+  .sum-row::after{
+    content:"";flex:none;width:.45rem;height:.45rem;margin:0 .2rem 0 .1rem;
+    border-right:1.5px solid var(--text-dim);border-bottom:1.5px solid var(--text-dim);
+    transform:translateY(-2px) rotate(45deg);transition:transform .2s;
+  }
+  .options[open] .sum-row::after{transform:translateY(1px) rotate(-135deg)}
+  .opt-list{display:flex;flex-direction:column;gap:.85rem;padding-top:.9rem}
+  .opt{display:flex;align-items:center;justify-content:space-between;gap:1rem;font-size:.9rem;cursor:pointer}
+  .opt small{display:block;font-size:.75rem;color:var(--text-dim)}
+  .opt input[type="checkbox"]{
+    -webkit-appearance:none;appearance:none;flex:none;position:relative;margin:0;
+    width:2.6rem;height:1.5rem;border-radius:1rem;background:rgba(255,255,255,.16);
+    cursor:pointer;transition:background-color .2s;
+  }
+  .opt input[type="checkbox"]::before{
+    content:"";position:absolute;top:.2rem;left:.2rem;width:1.1rem;height:1.1rem;
+    border-radius:50%;background:#e6ebf2;transition:transform .2s;
+  }
+  .opt input[type="checkbox"]:checked{background:var(--accent)}
+  .opt input[type="checkbox"]:checked::before{transform:translateX(1.1rem)}
+  .opt select{
+    flex:none;background:#162036;color:var(--text);border:1px solid var(--border);
+    border-radius:.5rem;padding:.4rem .5rem;font:inherit;font-size:.85rem;
+  }
+  .opt input:focus-visible,.opt select:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 
   .btn-start{
-    grid-column:1/-1;
+    width:100%;border:0;border-radius:.8rem;padding:.85rem;
+    font:inherit;font-size:1.05rem;font-weight:600;letter-spacing:.08em;color:#0b1120;
     background:linear-gradient(135deg,var(--inhale),var(--accent));
-    border:none;border-radius:.65rem;padding:.75rem;
-    color:#0b1120;font-size:1rem;font-weight:600;
-    cursor:pointer;transition:opacity .2s;
-    letter-spacing:.03em;
+    cursor:pointer;touch-action:manipulation;transition:filter .2s,transform .1s;
   }
-  .btn-start:hover{opacity:.88}
-  .btn-start:disabled{opacity:.4;cursor:not-allowed}
+  .btn-start:active{transform:scale(.99)}
+  .btn-start:focus-visible{outline:2px solid #fff;outline-offset:3px}
 
-  /* ── exercise view ── */
+  .safety{font-size:.8rem;color:var(--text-dim)}
+  .safety summary{cursor:pointer;border-radius:.4rem}
+  .safety ul{margin-top:.6rem;padding-left:1.2rem;line-height:1.75}
+  .safety li+li{margin-top:.3rem}
+
+  /* ── 練習 ── */
   .exercise{
-    display:none;flex-direction:column;align-items:center;gap:1.5rem;
-    width:100%;
+    width:100%;display:flex;flex-direction:column;align-items:center;gap:1.25rem;
+    --phase:var(--rest);
   }
-  .exercise.active{display:flex}
+  /* 階段顏色只在用到它的元素上做過渡，避免整棵子樹每一幀重算樣式 */
+  .exercise[data-phase="inhale"]{--phase:var(--inhale)}
+  .exercise[data-phase="hold"]{--phase:var(--hold)}
+  .exercise[data-phase="exhale"]{--phase:var(--exhale)}
 
-  /* circle */
-  .circle-wrapper{
-    position:relative;width:260px;height:260px;
-    display:flex;align-items:center;justify-content:center;
+  .stage{
+    position:relative;flex:none;aspect-ratio:1/1;
+    width:min(260px,72vw,46vh);width:min(260px,72vw,46dvh);
+    transition:opacity .5s;
   }
-
+  .stage[data-paused="true"]{opacity:.5}
+  .glow,.ring,.orbit,.orb{position:absolute;inset:0;margin:auto;pointer-events:none}
   .glow{
-    position:absolute;border-radius:50%;
-    width:100%;height:100%;
-    filter:blur(40px);opacity:0;
-    transition:opacity .8s,background .8s;
-    pointer-events:none;
+    width:100%;height:100%;border-radius:50%;
+    color:var(--phase);transition:color 1.2s ease;
+    background:radial-gradient(circle,currentColor 0%,transparent 68%);
+    opacity:.2;will-change:transform,opacity;
+  }
+  .ring{width:100%;height:100%;overflow:visible}
+  .ring circle{fill:none;stroke-width:1.5;stroke-linecap:round}
+  .ring-track{stroke:rgba(255,255,255,.07)}
+  .ring-arcs{transition:opacity .8s}
+  .arc{opacity:.3;transition:opacity .5s}
+  .arc.on{opacity:1}
+  .arc-inhale{stroke:var(--inhale)}
+  .arc-hold{stroke:var(--hold)}
+  .arc-exhale{stroke:var(--exhale)}
+  .exercise[data-mode="closing"] .ring-arcs{opacity:.15}
+  .orbit{width:100%;height:100%;will-change:transform;transition:opacity .8s}
+  .orbit::before{
+    content:"";position:absolute;left:50%;top:4%;width:10px;height:10px;margin:-5px 0 0 -5px;
+    border-radius:50%;background:var(--phase);box-shadow:0 0 10px 2px var(--phase);
+    transition:background-color 1.2s ease,box-shadow 1.2s ease;
+  }
+  .exercise[data-mode="closing"] .orbit{opacity:0}
+  .orb{
+    width:70%;height:70%;border-radius:50%;
+    background-color:var(--phase);
+    background-image:radial-gradient(circle at 34% 30%,rgba(255,255,255,.36),rgba(255,255,255,0) 58%);
+    box-shadow:0 0 40px -6px var(--phase);
+    transition:background-color 1.2s ease,box-shadow 1.2s ease;
+    transform:scale(.38);will-change:transform;
   }
 
-  .ring{
-    position:absolute;
-    width:100%;height:100%;
-    border-radius:50%;
-    border:2px solid rgba(255,255,255,.08);
-  }
-
-  .breath-circle{
-    width:80px;height:80px;
-    border-radius:50%;
-    background:radial-gradient(circle at 35% 35%,rgba(255,255,255,.25),transparent 60%),
-               var(--inhale);
-    transition:background 1s;
-    /* scale animated via JS */
-  }
-
-  .phase-label{
-    position:absolute;bottom:-2rem;
-    font-size:1.1rem;font-weight:500;letter-spacing:.06em;
-    transition:color .4s;
-  }
-
-  /* timer + info */
-  .info-bar{
-    display:flex;align-items:center;gap:1.5rem;
-    font-size:.85rem;color:var(--text-dim);
-  }
-  .info-bar span strong{color:var(--text)}
-
-  .countdown{
-    font-size:3rem;font-weight:300;
-    font-variant-numeric:tabular-nums;
-    min-width:3ch;text-align:center;
-    color:#fff;
-  }
-
-  /* progress bar */
-  .progress-track{
-    width:100%;height:4px;border-radius:2px;
-    background:rgba(255,255,255,.06);
-    overflow:hidden;
-  }
+  .readout{width:100%;display:flex;flex-direction:column;align-items:center;gap:.9rem}
+  .phase-text{text-align:center}
+  .phase-label{font-size:1.5rem;font-weight:500;letter-spacing:.12em;line-height:1.35;color:var(--phase);transition:color 1.2s ease}
+  .phase-cue{font-size:.9rem;color:var(--text-dim);min-height:1.6em;padding:0 .5rem;text-wrap:balance}
+  .countdown{font-size:2.25rem;font-weight:300;line-height:1;min-height:1em;color:rgba(255,255,255,.88);font-variant-numeric:tabular-nums}
+  .exercise.no-numbers .countdown{display:none}
+  .meta{display:flex;gap:1.25rem;font-size:.85rem;color:var(--text-dim);font-variant-numeric:tabular-nums}
+  .progress{width:100%;height:4px;border-radius:2px;background:rgba(255,255,255,.07);overflow:hidden}
   .progress-fill{
-    height:100%;width:0%;border-radius:2px;
-    background:var(--accent);
-    transition:width .3s linear;
+    width:100%;height:100%;
+    background:linear-gradient(90deg,var(--inhale),var(--accent),var(--exhale));
+    transform-origin:0 50%;transform:scaleX(0);will-change:transform;
   }
 
-  /* controls */
-  .controls{display:flex;gap:.75rem}
-  .btn-ctrl{
-    background:rgba(255,255,255,.06);border:1px solid var(--border);
-    border-radius:.55rem;padding:.55rem 1.4rem;
-    color:var(--text);font-size:.88rem;cursor:pointer;
-    transition:all .2s;
+  .controls{display:flex;flex-wrap:wrap;justify-content:center;gap:.6rem}
+  .btn{
+    min-height:2.75rem;padding:.55rem 1.3rem;border-radius:.7rem;
+    border:1px solid var(--border);background:var(--surface-2);color:var(--text);
+    font:inherit;font-size:.92rem;cursor:pointer;touch-action:manipulation;
+    transition:border-color .2s,color .2s,background-color .2s;
   }
-  .btn-ctrl:hover{border-color:var(--accent);color:#fff}
-  .btn-ctrl.primary{
-    background:linear-gradient(135deg,var(--inhale),var(--accent));
-    border:none;color:#0b1120;font-weight:600;
-  }
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .btn.primary{border:0;background:linear-gradient(135deg,var(--inhale),var(--accent));color:#0b1120;font-weight:600}
+  .btn-icon{display:inline-flex;align-items:center;justify-content:center;padding:.55rem .85rem}
+  #btnSound[aria-pressed="true"] .i-off,
+  #btnSound[aria-pressed="false"] .i-on{display:none}
+  .kbd-hint{display:none;font-size:.75rem;color:var(--text-dim)}
+  @media (hover:hover) and (pointer:fine){.kbd-hint{display:block}}
 
-  /* completion */
-  .complete-msg{
-    display:none;flex-direction:column;align-items:center;gap:1rem;
-    text-align:center;
-  }
-  .complete-msg.active{display:flex}
-  .complete-msg h2{
-    font-size:1.4rem;font-weight:500;
+  /* ── 完成 ── */
+  .complete{display:flex;flex-direction:column;align-items:center;gap:1rem;text-align:center;padding:1rem 0}
+  .complete h2{
+    font-size:1.45rem;font-weight:500;outline:none;
     background:linear-gradient(135deg,var(--inhale),var(--exhale));
-    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
   }
-  .complete-msg p{color:var(--text-dim);font-size:.9rem;line-height:1.6}
+  .summary{font-size:.92rem;color:var(--text);font-variant-numeric:tabular-nums}
+  .reflect{font-size:.9rem;line-height:1.9;color:var(--text-dim);max-width:24rem;text-wrap:balance}
 
-  /* responsive */
-  @media(max-width:480px){
-    .app{padding:1.5rem 1rem}
-    .circle-wrapper{width:220px;height:220px}
-    .settings{padding:1.2rem}
+  .noscript{position:relative;z-index:1;margin:auto;padding:2rem 1rem;text-align:center}
+
+  /* 只在能懸停的裝置套用 hover，避免手機點擊後殘留高亮 */
+  @media (hover:hover){
+    .preset:hover{border-color:var(--border-strong)}
+    .st-btn:hover:not([aria-disabled="true"]){background:rgba(255,255,255,.07)}
+    .btn-start:hover{filter:brightness(1.06)}
+    .btn:hover{border-color:var(--accent);color:#fff}
+  }
+
+  /* 窄螢幕：欄位改為單欄，避免數字被擠壓 */
+  @media (max-width:359px){
+    .settings{padding:1rem}
+    .custom,.length{grid-template-columns:minmax(0,1fr)}
+  }
+
+  /* 手機橫放：圓圈與資訊左右並排，避免超出畫面 */
+  @media (orientation:landscape) and (max-height:540px){
+    body[data-view="exercise"] .app{max-width:760px;padding-block:1rem}
+    .exercise{flex-direction:row;justify-content:center;gap:2rem}
+    .stage{width:min(260px,40vw,80vh);width:min(260px,40vw,80dvh)}
+    .readout{max-width:340px;gap:.6rem}
+  }
+
+  /* 減少動態效果：移除背景漂浮與光暈縮放，保留引導所需的圓圈 */
+  @media (prefers-reduced-motion:reduce){
+    .ambient{display:none}
+    .glow{transform:none !important}
   }
 </style>
 </head>
-<body>
+<body data-view="settings">
 
-<!-- ambient particles -->
-<div class="ambient" id="ambient"></div>
+<div class="ambient" id="ambient" aria-hidden="true"></div>
 
-<div class="app">
-  <h1>呼吸練習引導</h1>
+<main class="app" id="app">
+  <h1 class="title">呼吸練習引導</h1>
 
-  <!-- ── Settings ── -->
-  <div class="settings" id="settings">
-    <div class="preset-row">
-      <button class="preset" data-i="4" data-h="4" data-e="4" data-c="6">Box 4-4-4 x6</button>
-      <button class="preset" data-i="4" data-h="7" data-e="8" data-c="4">4-7-8 放鬆 x4</button>
-      <button class="preset" data-i="5" data-h="0" data-e="5" data-c="8">等長呼吸 x8</button>
+  <!-- ── 設定 ── -->
+  <section class="settings" id="settings" aria-label="練習設定">
+    <fieldset>
+      <legend class="section-label">選擇呼吸法</legend>
+      <div class="preset-grid" id="presetGrid"></div>
+    </fieldset>
+
+    <p class="guide" id="guide"></p>
+
+    <div class="custom" id="customFields" hidden>
+      <div class="stepper">
+        <label for="inhale">吸氣</label>
+        <div class="st-ctrl">
+          <button type="button" class="st-btn" data-for="inhale" data-step="-1" aria-label="減少吸氣秒數">−</button>
+          <input id="inhale" type="number" inputmode="numeric" step="1">
+          <span class="st-unit" aria-hidden="true">秒</span>
+          <button type="button" class="st-btn" data-for="inhale" data-step="1" aria-label="增加吸氣秒數">+</button>
+        </div>
+      </div>
+      <div class="stepper">
+        <label for="holdIn">吸後停留</label>
+        <div class="st-ctrl">
+          <button type="button" class="st-btn" data-for="holdIn" data-step="-1" aria-label="減少吸後停留秒數">−</button>
+          <input id="holdIn" type="number" inputmode="numeric" step="1">
+          <span class="st-unit" aria-hidden="true">秒</span>
+          <button type="button" class="st-btn" data-for="holdIn" data-step="1" aria-label="增加吸後停留秒數">+</button>
+        </div>
+      </div>
+      <div class="stepper">
+        <label for="exhale">吐氣</label>
+        <div class="st-ctrl">
+          <button type="button" class="st-btn" data-for="exhale" data-step="-1" aria-label="減少吐氣秒數">−</button>
+          <input id="exhale" type="number" inputmode="numeric" step="1">
+          <span class="st-unit" aria-hidden="true">秒</span>
+          <button type="button" class="st-btn" data-for="exhale" data-step="1" aria-label="增加吐氣秒數">+</button>
+        </div>
+      </div>
+      <div class="stepper">
+        <label for="holdOut">吐後停留</label>
+        <div class="st-ctrl">
+          <button type="button" class="st-btn" data-for="holdOut" data-step="-1" aria-label="減少吐後停留秒數">−</button>
+          <input id="holdOut" type="number" inputmode="numeric" step="1">
+          <span class="st-unit" aria-hidden="true">秒</span>
+          <button type="button" class="st-btn" data-for="holdOut" data-step="1" aria-label="增加吐後停留秒數">+</button>
+        </div>
+      </div>
     </div>
 
-    <div class="field">
-      <label>吸氣秒數</label>
-      <input type="number" id="inhaleTime" value="4" min="1" max="30">
-    </div>
-    <div class="field">
-      <label>閉氣秒數</label>
-      <input type="number" id="holdTime" value="4" min="0" max="30">
-    </div>
-    <div class="field">
-      <label>吐氣秒數</label>
-      <input type="number" id="exhaleTime" value="4" min="1" max="30">
-    </div>
-    <div class="field">
-      <label>循環次數</label>
-      <input type="number" id="cycles" value="6" min="1" max="99">
+    <div class="length">
+      <div class="stepper">
+        <label for="cycles">循環次數</label>
+        <div class="st-ctrl">
+          <button type="button" class="st-btn" data-for="cycles" data-step="-1" aria-label="減少循環次數">−</button>
+          <input id="cycles" type="number" inputmode="numeric" step="1">
+          <span class="st-unit" aria-hidden="true">輪</span>
+          <button type="button" class="st-btn" data-for="cycles" data-step="1" aria-label="增加循環次數">+</button>
+        </div>
+      </div>
+      <p class="estimate" id="estimate" aria-live="polite"></p>
     </div>
 
-    <button class="btn-start" id="btnStart">開始練習</button>
-  </div>
+    <ul class="hints" id="hints" aria-live="polite"></ul>
 
-  <!-- ── Exercise ── -->
-  <div class="exercise" id="exercise">
-    <div class="circle-wrapper">
+    <details class="options">
+      <summary><span class="sum-row"><span>練習選項</span><span class="options-summary" id="optionsSummary"></span></span></summary>
+      <div class="opt-list">
+        <label class="opt">
+          <span>開始前安頓<small>約 12 秒，引導坐穩、放鬆</small></span>
+          <input type="checkbox" id="optSettle" role="switch">
+        </label>
+        <label class="opt">
+          <span>結束後自然呼吸<small>放下節奏，靜靜觀察呼吸</small></span>
+          <select id="optClosing">
+            <option value="0">不需要</option>
+            <option value="30">30 秒</option>
+            <option value="60">1 分鐘</option>
+            <option value="180">3 分鐘</option>
+            <option value="300">5 分鐘</option>
+            <option value="600">10 分鐘</option>
+          </select>
+        </label>
+        <label class="opt" id="soundRow">
+          <span>提示音<small>吸氣上揚、吐氣下行，可閉眼練習</small></span>
+          <input type="checkbox" id="optSound" role="switch">
+        </label>
+        <label class="opt" id="vibrateRow" hidden>
+          <span>震動提示<small>每個階段開始時輕震一下</small></span>
+          <input type="checkbox" id="optVibrate" role="switch">
+        </label>
+        <label class="opt">
+          <span>顯示秒數<small>熟練後可關閉，只跟著圓圈</small></span>
+          <input type="checkbox" id="optNumbers" role="switch">
+        </label>
+      </div>
+    </details>
+
+    <button type="button" class="btn-start" id="btnStart">開始練習</button>
+
+    <details class="safety">
+      <summary>安全提醒：感到頭暈或不適時，請隨時停止，恢復自然呼吸</summary>
+      <ul>
+        <li>呼吸練習應該是舒適的。出現頭暈、胸悶、心悸或任何不適，請停止並恢復自然呼吸。</li>
+        <li>懷孕、心血管疾病、高血壓、氣喘等呼吸道疾病，或有恐慌、焦慮相關困擾者，請避免長時間停留（停息），必要時先諮詢醫師。</li>
+        <li>請勿在開車、游泳或任何需要保持警覺的情境下練習。</li>
+        <li>本工具僅供放鬆練習，不能取代醫療建議。</li>
+      </ul>
+    </details>
+  </section>
+
+  <!-- ── 練習 ── -->
+  <section class="exercise" id="exercise" aria-label="呼吸練習" hidden>
+    <div class="stage" id="stage">
       <div class="glow" id="glow"></div>
-      <div class="ring"></div>
-      <div class="breath-circle" id="circle"></div>
-      <div class="phase-label" id="phaseLabel">準備中...</div>
+      <svg class="ring" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+        <circle class="ring-track" cx="50" cy="50" r="46"></circle>
+        <g class="ring-arcs" id="ringArcs" transform="rotate(-90 50 50)"></g>
+      </svg>
+      <div class="orbit" id="orbit"></div>
+      <div class="orb" id="orb"></div>
     </div>
 
-    <div class="countdown" id="countdown">&nbsp;</div>
-
-    <div class="info-bar">
-      <span>循環 <strong id="curCycle">1</strong> / <strong id="totalCycles">6</strong></span>
+    <div class="readout">
+      <div class="phase-text">
+        <p class="phase-label" id="phaseLabel"></p>
+        <p class="phase-cue" id="phaseCue"></p>
+      </div>
+      <p class="countdown" id="countdown" aria-hidden="true"></p>
+      <p class="meta"><span id="cycleInfo"></span><span id="remainInfo"></span></p>
+      <div class="progress" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="controls">
+        <button type="button" class="btn" id="btnPause">暫停</button>
+        <button type="button" class="btn" id="btnSkip" hidden>跳過</button>
+        <button type="button" class="btn" id="btnStop">結束</button>
+        <button type="button" class="btn btn-icon" id="btnSound" aria-pressed="true" aria-label="提示音">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+            <path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4z" fill="currentColor"/>
+            <path class="i-on" d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a7.8 7.8 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            <path class="i-off" d="M16 9.5l5 5m0-5l-5 5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      <p class="kbd-hint">空白鍵 暫停／繼續 · Esc 結束</p>
     </div>
 
-    <div class="progress-track">
-      <div class="progress-fill" id="progressFill"></div>
-    </div>
+    <p class="sr-only" id="announcer" aria-live="assertive" aria-atomic="true"></p>
+  </section>
 
+  <!-- ── 完成 ── -->
+  <section class="complete" id="complete" aria-labelledby="completeTitle" hidden>
+    <h2 id="completeTitle" tabindex="-1">練習完成</h2>
+    <p class="summary" id="summary"></p>
+    <p class="reflect">靜靜感受此刻：呼吸的節奏、身體的鬆緊、心裡的感覺。<br>不需要評判，只是知道。</p>
     <div class="controls">
-      <button class="btn-ctrl" id="btnPause">暫停</button>
-      <button class="btn-ctrl" id="btnStop">結束</button>
+      <button type="button" class="btn primary" id="btnAgain">再練一次</button>
+      <button type="button" class="btn" id="btnBack">調整設定</button>
     </div>
-  </div>
+  </section>
+</main>
 
-  <!-- ── Complete ── -->
-  <div class="complete-msg" id="completeMsg">
-    <h2>練習完成</h2>
-    <p id="summary"></p>
-    <button class="btn-ctrl primary" id="btnRestart">再來一次</button>
-  </div>
-</div>
+<noscript>
+  <style>.app{display:none}</style>
+  <p class="noscript">這個呼吸練習工具需要啟用 JavaScript 才能使用。</p>
+</noscript>
 
 <script>
+'use strict';
 (() => {
-  // ── DOM refs ──
-  const $settings    = document.getElementById('settings');
-  const $exercise    = document.getElementById('exercise');
-  const $completeMsg = document.getElementById('completeMsg');
-  const $circle      = document.getElementById('circle');
-  const $glow        = document.getElementById('glow');
-  const $phaseLabel  = document.getElementById('phaseLabel');
-  const $countdown   = document.getElementById('countdown');
-  const $curCycle    = document.getElementById('curCycle');
-  const $totalCycles = document.getElementById('totalCycles');
-  const $progressFill= document.getElementById('progressFill');
-  const $summary     = document.getElementById('summary');
+  /* ═══════════════ 資料與常數 ═══════════════ */
 
-  const $inhale  = document.getElementById('inhaleTime');
-  const $hold    = document.getElementById('holdTime');
-  const $exhale  = document.getElementById('exhaleTime');
-  const $cycles  = document.getElementById('cycles');
+  const STORAGE_KEY = 'breathing-guide/settings/v1';
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const RING_R = 46;
+  const RING_C = 2 * Math.PI * RING_R;
 
-  // ── Ambient particles ──
-  const ambient = document.getElementById('ambient');
-  for (let i = 0; i < 18; i++) {
-    const s = document.createElement('span');
-    const size = Math.random() * 120 + 30;
-    s.style.width = s.style.height = size + 'px';
-    s.style.left = Math.random() * 100 + '%';
-    s.style.background = ['var(--inhale)','var(--hold)','var(--exhale)','var(--accent)'][i % 4];
-    s.style.animationDuration = (Math.random() * 12 + 10) + 's';
-    s.style.animationDelay = (Math.random() * -20) + 's';
-    ambient.appendChild(s);
-  }
+  const LIMITS = { inhale: [1, 30], holdIn: [0, 30], exhale: [1, 30], holdOut: [0, 30], cycles: [1, 99] };
+  const CLOSING_CHOICES = [0, 30, 60, 180, 300, 600];
+  const SETTLE_STEP_MS = 4000;   // 安頓：每句引導 4 秒
+  const READY_MS = 3000;         // 不安頓時，保留 3 秒準備
+  const CLOSING_STEP_MS = 12000; // 自然呼吸：前幾句引導每 12 秒換一句，之後保持安靜
 
-  // ── Presets ──
-  document.querySelectorAll('.preset').forEach(btn => {
-    btn.addEventListener('click', () => {
-      $inhale.value = btn.dataset.i;
-      $hold.value   = btn.dataset.h;
-      $exhale.value = btn.dataset.e;
-      $cycles.value = btn.dataset.c;
-    });
-  });
+  // 圓圈縮放（最大尺寸為 1）；top 是循環嘆息第一段吸氣的高度
+  const SCALE = { min: 0.38, max: 1, top: 0.88, rest: 0.62 };
 
-  // ── State ──
-  let running = false;
-  let paused  = false;
-  let stopRequested = false;
-  let animFrame = null;
-
-  // ── Helpers ──
-  const phaseConfig = {
-    inhale: { label: '吸氣', color: 'var(--inhale)', glow: 'var(--glow-inhale)' },
-    hold:   { label: '閉氣', color: 'var(--hold)',   glow: 'var(--glow-hold)' },
-    exhale: { label: '吐氣', color: 'var(--exhale)', glow: 'var(--glow-exhale)' },
+  const PHASES = {
+    inhale:  { label: '吸氣', short: '吸',   cue: '用鼻子緩緩吸氣，腹部自然鼓起' },
+    topup:   { label: '補吸', short: '補吸', cue: '再短短吸一口，讓肺部充滿' },
+    holdIn:  { label: '停留', short: '停',   cue: '吸飽後輕輕停住，喉嚨與肩膀放鬆' },
+    exhale:  { label: '吐氣', short: '吐',   cue: '緩緩吐氣，讓身體一路放鬆' },
+    holdOut: { label: '停留', short: '停',   cue: '吐盡後安靜停留，不用力' },
   };
 
-  function setPhaseVisual(phase, progress) {
-    const cfg = phaseConfig[phase];
-    $phaseLabel.textContent = cfg.label;
-    $phaseLabel.style.color = cfg.color;
-    $glow.style.background  = cfg.glow;
-    $glow.style.opacity     = '1';
-    $circle.style.background =
-      `radial-gradient(circle at 35% 35%, rgba(255,255,255,.25), transparent 60%), ${cfg.color}`;
+  const PRESETS = [
+    {
+      id: 'exhale', name: '延長吐氣', tag: '紓壓・放鬆', cycles: 18,
+      phases: [['inhale', 4], ['exhale', 6]],
+      guide: '吐氣比吸氣長，幫助身體從緊繃切換到放鬆。可以想像透過吸管，慢慢、均勻地吐氣。沒有停息，是最溫和的入門選擇。',
+      cues: { exhale: '慢慢、均勻地吐氣，比吸氣更長' },
+    },
+    {
+      id: 'resonance', name: '共振呼吸', tag: '平衡・安定', cycles: 30,
+      phases: [['inhale', 5], ['exhale', 5]],
+      guide: '每分鐘約 6 次，吸吐等長、不停頓。重點是輕柔平順，不需要吸得很飽。建議持續 5 分鐘以上。',
+      cues: { inhale: '輕柔地吸氣，不必吸滿', exhale: '平順地吐氣，像海浪退去' },
+    },
+    {
+      id: 'box', name: '方塊呼吸', tag: '專注・穩定', cycles: 10,
+      phases: [['inhale', 4], ['holdIn', 4], ['exhale', 4], ['holdOut', 4]],
+      guide: '吸、停、吐、停各 4 秒，像沿著方塊的四條邊走一圈。適合需要專注、穩定情緒的時刻。以鼻呼吸為主，停留時保持放鬆、不憋氣。',
+    },
+    {
+      id: '478', name: '4-7-8 呼吸', tag: '助眠・入睡', cycles: 4,
+      phases: [['inhale', 4], ['holdIn', 7], ['exhale', 8]],
+      guide: '舌尖輕抵上排門牙後方。用鼻子安靜吸氣 4 秒、停留 7 秒，再用嘴巴呼氣 8 秒，發出輕柔的「呼」聲。初學的第一個月一次不超過 4 輪；停留太吃力時，可用「自訂」大致等比例縮短（例如 3-5-6）。',
+      cues: { inhale: '舌尖輕抵上門牙後方，用鼻子安靜吸氣', holdIn: '輕輕停住，保持放鬆', exhale: '用嘴巴呼氣，發出輕柔的「呼」聲' },
+    },
+    {
+      id: 'sigh', name: '循環嘆息', tag: '快速舒緩', cycles: 30,
+      phases: [['inhale', 3], ['topup', 1], ['exhale', 6]],
+      guide: '用鼻子吸氣，快吸飽時再短短補吸一口，然後用嘴巴長長地吐氣。研究顯示，每天練習 5 分鐘有助提升情緒；緊張時做 1–3 次，也是常見的即時舒緩方式。',
+      cues: { inhale: '用鼻子深深吸氣', topup: '再短短補吸一口', exhale: '用嘴巴長長地、慢慢地吐氣' },
+    },
+    {
+      id: 'custom', name: '自訂', tag: '自己的節奏', custom: true,
+      guide: '設定各段秒數，0 秒的停留會略過。初學者建議吐氣不短於吸氣，停留不超過 10 秒。',
+    },
+  ];
 
-    let scale;
-    if (phase === 'inhale') {
-      // 0.6 → 1.8
-      scale = 0.6 + 1.2 * progress;
-    } else if (phase === 'hold') {
-      scale = 1.8;
+  const SETTLE_CUES = [
+    '找個舒服的姿勢，坐著或躺下都可以',
+    '放鬆肩膀、下巴與眉心',
+    '先自然地呼吸，準備跟著圓圈開始',
+  ];
+  const CLOSING_CUES = [
+    '放下節奏，讓呼吸自然來去',
+    '只是觀察，不需要控制',
+    '感受空氣進出鼻孔的涼與暖',
+    '留意身體此刻的感受',
+    '念頭飄走了，就溫柔地回到呼吸',
+  ];
+  const VIBRATION = { inhale: [40], topup: [20], holdIn: [15], holdOut: [15], exhale: [25, 70, 25], closing: [60] };
+
+  const DEFAULTS = {
+    preset: 'exhale', cycles: 18,
+    custom: { inhale: 4, holdIn: 4, exhale: 4, holdOut: 0 },
+    settle: true, closing: 60, sound: true, vibrate: false, numbers: true,
+  };
+
+  /* ═══════════════ 小工具 ═══════════════ */
+
+  const $ = (id) => document.getElementById(id);
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  // 正弦緩入緩出：一口氣的開頭與結尾較緩、中段最順，貼近真實呼吸的氣流
+  const easeInOut = (t) => 0.5 - 0.5 * Math.cos(Math.PI * t);
+  const toInt = (v, [lo, hi], fallback) => {
+    if (v === '' || v === null || v === undefined || typeof v === 'boolean') return fallback;
+    const n = Math.round(Number(v));
+    return Number.isFinite(n) ? clamp(n, lo, hi) : fallback;
+  };
+  const sumSec = (phases) => phases.reduce((a, [, d]) => a + d, 0);
+  const colorKey = (kind) =>
+    kind === 'inhale' || kind === 'topup' ? 'inhale'
+      : kind === 'exhale' ? 'exhale'
+        : kind === 'holdIn' || kind === 'holdOut' ? 'hold' : 'rest';
+  const span = (cls, text) => {
+    const s = document.createElement('span');
+    s.className = cls;
+    s.textContent = text;
+    return s;
+  };
+  function fmtDuration(sec) {
+    const t = Math.max(0, Math.round(sec));
+    const m = Math.floor(t / 60), s = t % 60;
+    if (m === 0) return `${s} 秒`;
+    return s === 0 ? `${m} 分鐘` : `${m} 分 ${s} 秒`;
+  }
+  function fmtClock(ms) {
+    const t = Math.max(0, Math.ceil(ms / 1000));
+    return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
+  }
+
+  /* ═══════════════ 設定的讀取與保存 ═══════════════ */
+
+  function loadSettings() {
+    let raw = null;
+    try { raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch { raw = null; }
+    const o = raw && typeof raw === 'object' ? raw : {};
+    const c = o.custom && typeof o.custom === 'object' ? o.custom : {};
+    const bool = (v, d) => (typeof v === 'boolean' ? v : d);
+    return {
+      preset: PRESETS.some((p) => p.id === o.preset) ? o.preset : DEFAULTS.preset,
+      cycles: toInt(o.cycles, LIMITS.cycles, DEFAULTS.cycles),
+      custom: {
+        inhale: toInt(c.inhale, LIMITS.inhale, DEFAULTS.custom.inhale),
+        holdIn: toInt(c.holdIn, LIMITS.holdIn, DEFAULTS.custom.holdIn),
+        exhale: toInt(c.exhale, LIMITS.exhale, DEFAULTS.custom.exhale),
+        holdOut: toInt(c.holdOut, LIMITS.holdOut, DEFAULTS.custom.holdOut),
+      },
+      settle: bool(o.settle, DEFAULTS.settle),
+      closing: CLOSING_CHOICES.includes(o.closing) ? o.closing : DEFAULTS.closing,
+      sound: bool(o.sound, DEFAULTS.sound),
+      vibrate: bool(o.vibrate, DEFAULTS.vibrate),
+      numbers: bool(o.numbers, DEFAULTS.numbers),
+    };
+  }
+  function saveSettings() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); } catch { /* 私密瀏覽等情況：不保存也能正常使用 */ }
+  }
+
+  const settings = loadSettings();
+  const presetById = (id) => PRESETS.find((p) => p.id === id) || PRESETS[0];
+  const customPhases = () => {
+    const c = settings.custom;
+    return [['inhale', c.inhale], ['holdIn', c.holdIn], ['exhale', c.exhale], ['holdOut', c.holdOut]].filter(([, d]) => d > 0);
+  };
+  const activePhases = () => {
+    const p = presetById(settings.preset);
+    return p.custom ? customPhases() : p.phases;
+  };
+  const rhythmText = (phases) => phases.map(([k, d]) => `${PHASES[k].short}${d}`).join('・');
+
+  /* ═══════════════ 練習時間軸（純函式） ═══════════════
+     整個練習先排成一條時間軸：安頓（或準備）→ 各輪調息 → 自然呼吸。
+     畫面只需依「已經過的時間」查出所在段落，暫停、切到背景再回來都不會漂移。 */
+
+  function buildPlan({ phases, cycles, settle, closingMs, cues }) {
+    const segs = [];
+    let t = 0;
+    const add = (seg) => {
+      seg.start = t;
+      seg.end = t + seg.dur;
+      t = seg.end;
+      segs.push(seg);
+      return seg;
+    };
+    const group = (list) => {
+      const gs = list[0].start, ge = list[list.length - 1].end;
+      list.forEach((s, i) => Object.assign(s, { groupStart: gs, groupEnd: ge, first: i === 0 }));
+    };
+
+    group(settle
+      ? SETTLE_CUES.map((cue) => add({ kind: 'settle', dur: SETTLE_STEP_MS, label: '安頓', cue, say: cue }))
+      : [add({ kind: 'ready', dur: READY_MS, label: '準備', cue: '跟著圓圈開始', say: '準備開始' })]);
+    const practiceStart = t;
+
+    for (let c = 1; c <= cycles; c++) {
+      phases.forEach(([kind, d], i) => {
+        const P = PHASES[kind];
+        const nextKind = phases[i + 1] && phases[i + 1][0];
+        add({
+          kind, dur: d * 1000, cycle: c, phaseIndex: i,
+          label: P.label, cue: cues[kind] || P.cue, say: `${P.label} ${d} 秒`,
+          peak: kind === 'inhale' && nextKind === 'topup' ? SCALE.top : SCALE.max,
+        });
+      });
+    }
+    const practiceEnd = t;
+
+    if (closingMs > 0) {
+      const list = [];
+      let rest = closingMs;
+      CLOSING_CUES.forEach((cue, i) => {
+        if (rest <= 0) return;
+        const dur = i === CLOSING_CUES.length - 1 ? rest : Math.min(CLOSING_STEP_MS, rest);
+        list.push(add({ kind: 'closing', dur, label: '自然呼吸', cue, say: i === 0 ? `自然呼吸。${cue}` : cue }));
+        rest -= dur;
+      });
+      group(list);
+    }
+
+    // 聲音時間表：開始鐘聲 → 每段提示音 → 進入自然呼吸的鐘聲 → 結束鐘聲
+    const sounds = [{ at: 0, type: 'bell' }];
+    for (const s of segs) if (s.cycle) sounds.push({ at: s.start, type: s.kind });
+    if (closingMs > 0) sounds.push({ at: practiceEnd, type: 'bell' });
+    sounds.push({ at: t, type: 'bell' });
+
+    return { segs, sounds, total: t, practiceStart, practiceEnd, cycleMs: sumSec(phases) * 1000, cycles };
+  }
+
+  /* ═══════════════ 聲音：Web Audio 即時合成，不需音檔 ═══════════════
+     提示音直接排進音訊時鐘，不依賴畫面更新，所以切到背景、關掉螢幕也能準時響起。 */
+
+  const audio = (() => {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    let ctx = null, master = null, bus = null, voices = [];
+    let plan = null, getElapsed = null, next = 0, timer = 0;
+
+    function ready() {
+      if (!AC) return false;
+      if (!ctx) {
+        try { ctx = new AC(); } catch { return false; }
+        master = ctx.createGain();
+        master.gain.value = 0.8;
+        master.connect(ctx.destination);
+      }
+      if (ctx.state !== 'running') ctx.resume().catch(() => {});
+      return true;
+    }
+    function ensureBus() {
+      if (!bus) {
+        bus = ctx.createGain();
+        bus.connect(master);
+      }
+    }
+    // 一個柔和的正弦音：緩起、自然衰減，可帶滑音
+    function tone(at, f, { to = f, dur = 1, peak = 0.12, attack = 0.05 } = {}) {
+      const osc = ctx.createOscillator();
+      const amp = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(f, at);
+      if (to !== f) osc.frequency.exponentialRampToValueAtTime(to, at + dur * 0.7);
+      amp.gain.setValueAtTime(0.0001, at);
+      amp.gain.exponentialRampToValueAtTime(peak, at + attack);
+      amp.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+      osc.connect(amp).connect(bus);
+      osc.start(at);
+      osc.stop(at + dur + 0.05);
+      voices.push(osc);
+      osc.onended = () => {
+        amp.disconnect();
+        const i = voices.indexOf(osc);
+        if (i >= 0) voices.splice(i, 1);
+      };
+    }
+    const SOUNDS = {
+      // 頌缽般的鐘聲：非整數倍泛音，再加一點失諧，讓餘音微微顫動
+      bell(at) {
+        tone(at, 330, { dur: 6, peak: 0.16, attack: 0.008 });
+        tone(at, 331.3, { dur: 5, peak: 0.08, attack: 0.008 });
+        tone(at, 330 * 2.76, { dur: 3.2, peak: 0.05, attack: 0.006 });
+        tone(at, 330 * 5.4, { dur: 1.6, peak: 0.022, attack: 0.004 });
+      },
+      inhale(at) { tone(at, 392, { to: 523, dur: 1.2, peak: 0.13, attack: 0.12 }); },  // 上揚
+      topup(at) { tone(at, 587, { to: 659, dur: 0.5, peak: 0.08, attack: 0.05 }); },
+      holdIn(at) { tone(at, 523, { dur: 0.7, peak: 0.06, attack: 0.02 }); },
+      exhale(at) { tone(at, 440, { to: 330, dur: 1.5, peak: 0.12, attack: 0.12 }); },  // 下行
+      holdOut(at) { tone(at, 294, { dur: 0.7, peak: 0.07, attack: 0.02 }); },
+    };
+
+    // 往前排定未來 30 秒的聲音；畫面在背景時一次排到練習結束，避免計時器被節流而漏音
+    function pump() {
+      if (!ctx || !bus || !plan) return;
+      const e = getElapsed();
+      const horizon = document.hidden ? Infinity : e + 30000;
+      const now = ctx.currentTime;
+      const list = plan.sounds;
+      while (next < list.length && list[next].at <= horizon) {
+        const s = list[next++];
+        // 過去太久的不補播；但容許些微延遲（第一次建立音訊可能要花幾十毫秒，不能因此漏掉開始的鐘聲）
+        if (s.at < e - 300) continue;
+        SOUNDS[s.type](now + Math.max(0, s.at - e) / 1000 + 0.02);
+      }
+    }
+    // 依時間軸開始（或重新對齊）排程
+    function play(p, elapsedFn) {
+      stop();
+      if (!ready()) return;
+      plan = p;
+      getElapsed = elapsedFn;
+      next = 0;
+      ensureBus();
+      pump();
+      timer = setInterval(pump, 1000);
+    }
+    // 取消所有排程，已在響的聲音快速淡出
+    function stop() {
+      clearInterval(timer);
+      timer = 0;
+      plan = null;
+      if (!bus) return;
+      const oldBus = bus, oldVoices = voices;
+      bus = null;
+      voices = [];
+      try { oldBus.gain.setTargetAtTime(0, ctx.currentTime, 0.06); } catch { /* ignore */ }
+      setTimeout(() => {
+        oldVoices.forEach((o) => { try { o.stop(); } catch { /* 已停止 */ } });
+        oldBus.disconnect();
+      }, 400);
+    }
+    // 練習自然結束：只停止排程，讓最後的鐘聲留下餘韻
+    function release() {
+      clearInterval(timer);
+      timer = 0;
+      plan = null;
+    }
+    function ringNow(type = 'bell') {
+      if (!ready()) return;
+      ensureBus();
+      SOUNDS[type](ctx.currentTime + 0.02);
+    }
+    return { play, stop, release, pump, ringNow, supported: Boolean(AC) };
+  })();
+
+  /* ═══════════════ 螢幕常亮 ═══════════════ */
+
+  const wake = (() => {
+    let sentinel = null, wanted = false;
+    async function acquire() {
+      wanted = true;
+      if (!('wakeLock' in navigator) || sentinel || document.hidden) return;
+      try {
+        const s = await navigator.wakeLock.request('screen');
+        if (!wanted) { s.release().catch(() => {}); return; }
+        sentinel = s;
+        s.addEventListener('release', () => { if (sentinel === s) sentinel = null; });
+      } catch { sentinel = null; }
+    }
+    function release() {
+      wanted = false;
+      if (sentinel) {
+        sentinel.release().catch(() => {});
+        sentinel = null;
+      }
+    }
+    // 切回畫面時瀏覽器會自動釋放，需要重新取得
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && wanted) acquire(); });
+    return { acquire, release };
+  })();
+
+  const canVibrate = typeof navigator.vibrate === 'function' && matchMedia('(pointer: coarse)').matches;
+  function buzz(kind) {
+    const p = VIBRATION[kind];
+    if (canVibrate && p) { try { navigator.vibrate(p); } catch { /* ignore */ } }
+  }
+
+  /* ═══════════════ DOM ═══════════════ */
+
+  const el = {
+    settings: $('settings'), exercise: $('exercise'), complete: $('complete'),
+    presetGrid: $('presetGrid'), guide: $('guide'), customFields: $('customFields'),
+    cycles: $('cycles'), estimate: $('estimate'), hints: $('hints'),
+    optSettle: $('optSettle'), optClosing: $('optClosing'), optSound: $('optSound'),
+    optVibrate: $('optVibrate'), optNumbers: $('optNumbers'),
+    soundRow: $('soundRow'), vibrateRow: $('vibrateRow'), optionsSummary: $('optionsSummary'),
+    btnStart: $('btnStart'),
+    stage: $('stage'), orb: $('orb'), glow: $('glow'), arcs: $('ringArcs'), orbit: $('orbit'),
+    phaseLabel: $('phaseLabel'), phaseCue: $('phaseCue'), countdown: $('countdown'),
+    cycleInfo: $('cycleInfo'), remainInfo: $('remainInfo'), progressFill: $('progressFill'),
+    btnPause: $('btnPause'), btnSkip: $('btnSkip'), btnStop: $('btnStop'), btnSound: $('btnSound'),
+    announcer: $('announcer'),
+    completeTitle: $('completeTitle'), summary: $('summary'), btnAgain: $('btnAgain'), btnBack: $('btnBack'),
+  };
+  const FIELDS = ['inhale', 'holdIn', 'exhale', 'holdOut', 'cycles'];
+  const fieldValue = (key) => (key === 'cycles' ? settings.cycles : settings.custom[key]);
+
+  function showView(name) {
+    el.settings.hidden = name !== 'settings';
+    el.exercise.hidden = name !== 'exercise';
+    el.complete.hidden = name !== 'complete';
+    document.body.dataset.view = name;
+  }
+  function announce(text) { el.announcer.textContent = text; }
+
+  /* ═══════════════ 設定畫面 ═══════════════ */
+
+  // 節奏文字拆成不可斷開的小段（「吸4・」「停4・」…），換行只會發生在段與段之間
+  function fillRhythm(target, phases) {
+    target.replaceChildren(...phases.map(([k, d], i) => span('tok', `${PHASES[k].short}${d}${i < phases.length - 1 ? '・' : ''}`)));
+  }
+
+  function renderPresets() {
+    const nodes = PRESETS.map((p) => {
+      const label = document.createElement('label');
+      label.className = 'preset';
+      label.dataset.id = p.id;
+      const input = document.createElement('input');
+      input.type = 'radio';
+      input.name = 'preset';
+      input.value = p.id;
+      input.checked = p.id === settings.preset;
+      const rhythm = span('p-rhythm', '');
+      fillRhythm(rhythm, p.custom ? customPhases() : p.phases);
+      label.append(input, span('p-name', p.name), rhythm, span('p-tag', p.tag));
+      return label;
+    });
+    el.presetGrid.replaceChildren(...nodes);
+  }
+
+  function syncInputs() {
+    for (const key of FIELDS) {
+      const input = $(key);
+      [input.min, input.max] = LIMITS[key].map(String);
+      input.value = fieldValue(key);
+    }
+    el.optSettle.checked = settings.settle;
+    el.optClosing.value = String(settings.closing);
+    el.optSound.checked = settings.sound;
+    el.optVibrate.checked = settings.vibrate;
+    el.optNumbers.checked = settings.numbers;
+    el.soundRow.hidden = !audio.supported;
+    el.vibrateRow.hidden = !canVibrate;
+  }
+
+  function refreshSettings() {
+    const p = presetById(settings.preset);
+    for (const label of el.presetGrid.children) label.classList.toggle('is-selected', label.dataset.id === p.id);
+    fillRhythm(el.presetGrid.querySelector('[data-id="custom"] .p-rhythm'), customPhases());
+    el.guide.textContent = p.guide;
+    el.customFields.hidden = !p.custom;
+    for (const btn of el.settings.querySelectorAll('.st-btn')) {
+      const [lo, hi] = LIMITS[btn.dataset.for];
+      const v = fieldValue(btn.dataset.for);
+      btn.setAttribute('aria-disabled', String(Number(btn.dataset.step) < 0 ? v <= lo : v >= hi));
+    }
+    updateEstimate();
+    updateHints();
+    updateOptionsSummary();
+  }
+
+  function updateEstimate() {
+    const cycleSec = sumSec(activePhases());
+    const practice = cycleSec * settings.cycles;
+    const intro = (settings.settle ? SETTLE_CUES.length * SETTLE_STEP_MS : READY_MS) / 1000;
+    const sub = span('est-sub', '');
+    sub.append(span('tok', `每輪 ${cycleSec} 秒・`), span('tok', `全程約 ${fmtDuration(intro + practice + settings.closing)}`));
+    el.estimate.replaceChildren(span('est-main', `調息約 ${fmtDuration(practice)}`), sub);
+  }
+
+  let lastHints = '';
+  function updateHints() {
+    const p = presetById(settings.preset);
+    const phases = activePhases();
+    const dur = (k) => phases.filter(([kind]) => kind === k).reduce((a, [, d]) => a + d, 0);
+    const cycleSec = sumSec(phases);
+    const bpm = 60 / cycleSec;
+    const msgs = [];
+    if (Math.max(dur('holdIn'), dur('holdOut')) >= 10) msgs.push('停留時間較長：初學者請量力而為，感到憋悶就提早換氣。');
+    if (bpm > 10) msgs.push(`節奏偏快（每分鐘約 ${Math.round(bpm)} 次）：放鬆練習建議放慢到每分鐘 6 次左右，太快容易頭暈。`);
+    if (p.custom && dur('exhale') < dur('inhale')) msgs.push('吐氣比吸氣短：想放鬆的話，建議讓吐氣至少和吸氣一樣長。');
+    if (p.id === '478' && settings.cycles > 4) msgs.push('4-7-8 呼吸建議初學的第一個月，一次不超過 4 輪。');
+    if (p.id === 'resonance' && cycleSec * settings.cycles < 300) msgs.push('共振呼吸持續 5 分鐘以上，身體較能進入平穩的節奏。');
+    const key = msgs.join('|');
+    if (key === lastHints) return;  // 內容沒變就不重繪，避免螢幕閱讀器重複播報
+    lastHints = key;
+    el.hints.replaceChildren(...msgs.map((m) => {
+      const li = document.createElement('li');
+      li.textContent = m;
+      return li;
+    }));
+  }
+
+  function updateOptionsSummary() {
+    const parts = [
+      settings.settle ? '安頓' : null,
+      settings.closing ? `自然呼吸 ${fmtDuration(settings.closing)}` : null,
+      audio.supported ? (settings.sound ? '提示音' : '靜音') : null,
+      canVibrate && settings.vibrate ? '震動' : null,
+      settings.numbers ? null : '隱藏秒數',
+    ].filter(Boolean);
+    el.optionsSummary.replaceChildren(...parts.map((t, i) => span('tok', i < parts.length - 1 ? `${t}・` : t)));
+  }
+
+  function commitField(key, value, writeBack = true) {
+    const v = clamp(Math.round(value), ...LIMITS[key]);
+    if (key === 'cycles') settings.cycles = v;
+    else settings.custom[key] = v;
+    if (writeBack) $(key).value = v;
+    saveSettings();
+    refreshSettings();
+  }
+
+  el.presetGrid.addEventListener('change', (ev) => {
+    const p = PRESETS.find((x) => x.id === ev.target.value);
+    if (!p) return;
+    settings.preset = p.id;
+    if (!p.custom) settings.cycles = p.cycles;
+    el.cycles.value = settings.cycles;
+    saveSettings();
+    refreshSettings();
+  });
+
+  el.settings.addEventListener('click', (ev) => {
+    const btn = ev.target.closest('.st-btn');
+    if (!btn || btn.getAttribute('aria-disabled') === 'true') return;
+    commitField(btn.dataset.for, fieldValue(btn.dataset.for) + Number(btn.dataset.step));
+  });
+
+  for (const key of FIELDS) {
+    const input = $(key);
+    // 輸入中：數值合法才即時套用，不去改寫使用者正在打的字
+    input.addEventListener('input', () => {
+      const [lo, hi] = LIMITS[key];
+      const n = Number(input.value);
+      if (input.value !== '' && Number.isInteger(n) && n >= lo && n <= hi) commitField(key, n, false);
+    });
+    // 離開欄位：超出範圍就夾回上下限，空白或非數字則恢復原值
+    input.addEventListener('change', () => commitField(key, toInt(input.value, LIMITS[key], fieldValue(key))));
+  }
+
+  function afterOptionChange() {
+    saveSettings();
+    updateEstimate();
+    updateOptionsSummary();
+  }
+  el.optSettle.addEventListener('change', () => { settings.settle = el.optSettle.checked; afterOptionChange(); });
+  el.optClosing.addEventListener('change', () => {
+    const v = Number(el.optClosing.value);
+    settings.closing = CLOSING_CHOICES.includes(v) ? v : DEFAULTS.closing;
+    afterOptionChange();
+  });
+  el.optSound.addEventListener('change', () => {
+    settings.sound = el.optSound.checked;
+    if (settings.sound) audio.ringNow('inhale');  // 試聽一下音量
+    afterOptionChange();
+  });
+  el.optVibrate.addEventListener('change', () => {
+    settings.vibrate = el.optVibrate.checked;
+    if (settings.vibrate) buzz('inhale');
+    afterOptionChange();
+  });
+  el.optNumbers.addEventListener('change', () => { settings.numbers = el.optNumbers.checked; afterOptionChange(); });
+
+  /* ═══════════════ 練習流程 ═══════════════ */
+
+  const session = {
+    status: 'idle',  // idle | running | paused | finished
+    plan: null, meta: null,
+    t0: 0, pausedAt: 0, skipped: 0,
+    idx: -1, raf: 0, lastFrame: 0,
+    shown: { count: '', remain: '' },
+  };
+  const now = () => performance.now();
+  const elapsed = (t = now()) => Math.max(0, (session.status === 'paused' ? session.pausedAt : t) - session.t0);
+
+  function buildRing(phases) {
+    const total = sumSec(phases);
+    const gap = 3;  // 各段之間留一點空隙（度）
+    const unit = RING_C / 360;
+    let acc = 0;
+    const arcs = phases.map(([kind, d], i) => {
+      const deg = (d / total) * 360;
+      const len = Math.max(deg - gap, 0.5) * unit;
+      const c = document.createElementNS(SVG_NS, 'circle');
+      c.setAttribute('cx', '50');
+      c.setAttribute('cy', '50');
+      c.setAttribute('r', String(RING_R));
+      c.setAttribute('class', `arc arc-${colorKey(kind)}`);
+      c.setAttribute('stroke-dasharray', `${len.toFixed(3)} ${(RING_C - len).toFixed(3)}`);
+      c.setAttribute('stroke-dashoffset', (-(acc + gap / 2) * unit).toFixed(3));
+      c.dataset.index = String(i);
+      acc += deg;
+      return c;
+    });
+    el.arcs.replaceChildren(...arcs);
+    el.orbit.style.transform = 'rotate(0deg)';
+  }
+
+  function startSession() {
+    const preset = presetById(settings.preset);
+    const phases = activePhases();
+    const plan = buildPlan({
+      phases, cycles: settings.cycles, settle: settings.settle,
+      closingMs: settings.closing * 1000, cues: preset.cues || {},
+    });
+    cancelAnimationFrame(session.raf);
+    Object.assign(session, {
+      status: 'running', plan,
+      meta: { name: preset.name, rhythm: rhythmText(phases), cycles: settings.cycles },
+      t0: now(), pausedAt: 0, skipped: 0, idx: -1, lastFrame: 0,
+      shown: { count: '', remain: '' },
+    });
+    buildRing(phases);
+    el.exercise.classList.toggle('no-numbers', !settings.numbers);
+    el.stage.dataset.paused = 'false';
+    el.btnPause.textContent = '暫停';
+    syncSoundButton();
+    showView('exercise');
+    if (settings.sound) audio.play(plan, () => elapsed());
+    wake.acquire();
+    frame(now());
+    el.btnPause.focus();
+  }
+
+  function frame(t) {
+    if (session.status !== 'running') return;
+    const { plan } = session;
+    const e = elapsed(t);
+    if (e >= plan.total) { finish(false); return; }
+    const segs = plan.segs;
+    let i = Math.max(session.idx, 0);
+    while (i < segs.length - 1 && e >= segs[i].end) i++;
+    if (i !== session.idx) {
+      // 從背景回來一次跳過好幾段時，不補發震動
+      const live = session.lastFrame === 0 || t - session.lastFrame < 250;
+      session.idx = i;
+      enterSegment(segs[i], live);
+    }
+    draw(segs[i], e);
+    session.lastFrame = t;
+    session.raf = requestAnimationFrame(frame);
+  }
+
+  // 進入新段落：文字、顏色、播報只在這裡更新一次，不在每一幀重寫
+  function enterSegment(seg, live) {
+    const practice = Boolean(seg.cycle);
+    el.exercise.dataset.phase = colorKey(seg.kind);
+    el.exercise.dataset.mode = seg.kind === 'closing' ? 'closing' : practice ? 'practice' : 'intro';
+    el.phaseLabel.textContent = seg.label;
+    el.phaseCue.textContent = seg.cue;
+    for (const arc of el.arcs.children) arc.classList.toggle('on', practice && Number(arc.dataset.index) === seg.phaseIndex);
+    el.cycleInfo.textContent = seg.kind === 'closing' ? '靜觀'
+      : practice ? `循環 ${seg.cycle} / ${session.plan.cycles}` : `共 ${session.plan.cycles} 輪`;
+    const skippable = seg.kind === 'settle' || seg.kind === 'closing';
+    if (!skippable && document.activeElement === el.btnSkip) el.btnPause.focus();
+    el.btnSkip.hidden = !skippable;
+    el.btnSkip.textContent = seg.kind === 'closing' ? '完成' : '跳過';
+    announce(seg.say);
+    if (live && settings.vibrate && (practice || seg.first)) buzz(seg.kind);
+  }
+
+  // 每一幀只更新 transform 等便宜的屬性；數字有變才改文字
+  function draw(seg, e) {
+    const k = easeInOut(clamp((e - seg.start) / seg.dur, 0, 1));
+    let s;
+    switch (seg.kind) {
+      case 'inhale': s = lerp(SCALE.min, seg.peak, k); break;
+      case 'topup': s = lerp(SCALE.top, SCALE.max, k); break;
+      case 'holdIn': s = SCALE.max; break;
+      case 'exhale': s = lerp(SCALE.max, SCALE.min, k); break;
+      case 'closing': s = lerp(SCALE.min, SCALE.rest, easeInOut(clamp((e - seg.groupStart) / 5000, 0, 1))); break;
+      default: s = SCALE.min;  // 安頓、準備、吐後停留
+    }
+    el.orb.style.transform = `scale(${s.toFixed(4)})`;
+    const n = (s - SCALE.min) / (SCALE.max - SCALE.min);
+    el.glow.style.transform = `scale(${(0.6 + 0.45 * n).toFixed(4)})`;
+    el.glow.style.opacity = (0.17 + 0.17 * n).toFixed(3);
+
+    const { plan, shown } = session;
+    if (seg.cycle) {
+      const deg = (((e - plan.practiceStart) % plan.cycleMs) / plan.cycleMs) * 360;
+      el.orbit.style.transform = `rotate(${deg.toFixed(2)}deg)`;
+    }
+    const count = seg.kind === 'closing'
+      ? fmtClock(seg.groupEnd - e)
+      : String(Math.ceil(((seg.cycle ? seg.end : seg.groupEnd) - e) / 1000));
+    if (count !== shown.count) el.countdown.textContent = shown.count = count;
+    const remain = fmtClock(plan.total - e);
+    if (remain !== shown.remain) {
+      shown.remain = remain;
+      el.remainInfo.textContent = `剩餘 ${remain}`;
+    }
+    el.progressFill.style.transform = `scaleX(${(e / plan.total).toFixed(4)})`;
+  }
+
+  function pause(auto = false) {
+    if (session.status !== 'running') return;
+    session.status = 'paused';
+    session.pausedAt = now();
+    cancelAnimationFrame(session.raf);
+    audio.stop();
+    wake.release();
+    el.btnPause.textContent = '繼續';
+    el.stage.dataset.paused = 'true';
+    el.phaseLabel.textContent = '已暫停';
+    el.phaseCue.textContent = auto ? '離開畫面時已自動暫停，準備好再繼續' : '準備好了，再按「繼續」';
+    announce('已暫停');
+  }
+
+  function resume() {
+    if (session.status !== 'paused') return;
+    session.t0 += now() - session.pausedAt;
+    session.status = 'running';
+    el.btnPause.textContent = '暫停';
+    el.stage.dataset.paused = 'false';
+    const seg = session.plan.segs[session.idx];
+    if (seg) {
+      el.phaseLabel.textContent = seg.label;
+      el.phaseCue.textContent = seg.cue;
+    }
+    announce('繼續練習');
+    if (settings.sound) audio.play(session.plan, () => elapsed());
+    wake.acquire();
+    session.lastFrame = 0;
+    frame(now());
+  }
+
+  const togglePause = () => (session.status === 'paused' ? resume() : pause());
+
+  // 安頓可跳過；自然呼吸可提早完成
+  function skip() {
+    if (session.status === 'paused') resume();
+    if (session.status !== 'running') return;
+    const seg = session.plan.segs[session.idx];
+    if (!seg) return;
+    if (seg.kind === 'closing') { finish(true); return; }
+    if (seg.kind !== 'settle') return;
+    const jump = seg.groupEnd - elapsed();
+    session.t0 -= jump;
+    session.skipped += jump;
+    if (settings.sound) audio.play(session.plan, () => elapsed());
+    cancelAnimationFrame(session.raf);
+    frame(now());
+  }
+
+  function stop() {
+    if (session.status === 'idle') return;
+    session.status = 'idle';
+    cancelAnimationFrame(session.raf);
+    audio.stop();
+    wake.release();
+    showView('settings');
+    el.btnStart.focus();
+  }
+
+  function finish(early) {
+    const practicedSec = (Math.min(elapsed(), session.plan.total) - session.skipped) / 1000;
+    session.status = 'finished';
+    cancelAnimationFrame(session.raf);
+    if (early) {
+      audio.stop();
+      if (settings.sound) audio.ringNow();
     } else {
-      // 1.8 → 0.6
-      scale = 1.8 - 1.2 * progress;
+      audio.release();
     }
-    $circle.style.transform = `scale(${scale})`;
-    $glow.style.transform   = `scale(${scale * 0.7})`;
+    wake.release();
+    const m = session.meta;
+    const parts = [m.name, m.rhythm, `${m.cycles} 輪`, `共 ${fmtDuration(practicedSec)}`];
+    el.summary.replaceChildren(...parts.map((t, i) => span('tok', i < parts.length - 1 ? `${t}・` : t)));
+    showView('complete');
+    el.completeTitle.focus();
   }
 
-  // ── Core loop using requestAnimationFrame ──
-  function sleep(ms) {
-    return new Promise(resolve => {
-      const start = performance.now();
-      function tick() {
-        if (stopRequested) { resolve(); return; }
-        if (paused) { animFrame = requestAnimationFrame(tick); return; }
-        if (performance.now() - start >= ms) { resolve(); return; }
-        animFrame = requestAnimationFrame(tick);
-      }
-      animFrame = requestAnimationFrame(tick);
-    });
+  function syncSoundButton() {
+    el.btnSound.hidden = !audio.supported;
+    el.btnSound.setAttribute('aria-pressed', String(settings.sound));
+    el.btnSound.title = settings.sound ? '關閉提示音' : '開啟提示音';
   }
 
-  function runPhase(phase, durationSec) {
-    return new Promise(resolve => {
-      if (durationSec <= 0 || stopRequested) { resolve(); return; }
-      const durationMs = durationSec * 1000;
-      let elapsed = 0;
-      let lastTime = performance.now();
-
-      function tick(now) {
-        if (stopRequested) { resolve(); return; }
-        if (paused) { lastTime = now; animFrame = requestAnimationFrame(tick); return; }
-
-        const dt = now - lastTime;
-        lastTime = now;
-        elapsed += dt;
-
-        const progress = Math.min(elapsed / durationMs, 1);
-        setPhaseVisual(phase, progress);
-
-        const remaining = Math.ceil((durationMs - elapsed) / 1000);
-        $countdown.textContent = remaining > 0 ? remaining : '';
-
-        if (elapsed >= durationMs) { resolve(); return; }
-        animFrame = requestAnimationFrame(tick);
-      }
-      animFrame = requestAnimationFrame(tick);
-    });
+  function toggleSound() {
+    settings.sound = !settings.sound;
+    el.optSound.checked = settings.sound;
+    saveSettings();
+    syncSoundButton();
+    updateOptionsSummary();
+    if (session.status !== 'running') return;
+    if (settings.sound) audio.play(session.plan, () => elapsed());
+    else audio.stop();
   }
 
-  async function startExercise() {
-    const inhaleS = Math.max(1, parseInt($inhale.value) || 4);
-    const holdS   = Math.max(0, parseInt($hold.value)   || 0);
-    const exhaleS = Math.max(1, parseInt($exhale.value)  || 4);
-    const totalC  = Math.max(1, parseInt($cycles.value)  || 6);
-
-    running = true; paused = false; stopRequested = false;
-
-    $settings.classList.add('hidden');
-    $exercise.classList.add('active');
-    $completeMsg.classList.remove('active');
-    $totalCycles.textContent = totalC;
-    document.getElementById('btnPause').textContent = '暫停';
-
-    const totalSeconds = (inhaleS + holdS + exhaleS) * totalC;
-    let doneSeconds = 0;
-
-    // countdown 3-2-1
-    $phaseLabel.textContent = '準備';
-    $phaseLabel.style.color = 'var(--text)';
-    $circle.style.transform = 'scale(0.6)';
-    $glow.style.opacity = '0';
-    for (let i = 3; i >= 1; i--) {
-      if (stopRequested) break;
-      $countdown.textContent = i;
-      await sleep(1000);
-    }
-
-    for (let c = 1; c <= totalC; c++) {
-      if (stopRequested) break;
-      $curCycle.textContent = c;
-
-      // inhale
-      await runPhase('inhale', inhaleS);
-      doneSeconds += inhaleS;
-      $progressFill.style.width = (doneSeconds / totalSeconds * 100) + '%';
-      if (stopRequested) break;
-
-      // hold
-      if (holdS > 0) {
-        await runPhase('hold', holdS);
-        doneSeconds += holdS;
-        $progressFill.style.width = (doneSeconds / totalSeconds * 100) + '%';
-        if (stopRequested) break;
-      }
-
-      // exhale
-      await runPhase('exhale', exhaleS);
-      doneSeconds += exhaleS;
-      $progressFill.style.width = (doneSeconds / totalSeconds * 100) + '%';
-    }
-
-    running = false;
-
-    if (!stopRequested) {
-      // complete
-      $exercise.classList.remove('active');
-      $completeMsg.classList.add('active');
-      const mins = Math.floor(totalSeconds / 60);
-      const secs = totalSeconds % 60;
-      const timeStr = mins > 0 ? `${mins} 分 ${secs} 秒` : `${secs} 秒`;
-      $summary.innerHTML =
-        `完成 <strong>${totalC}</strong> 個循環（${inhaleS}-${holdS}-${exhaleS}）<br>` +
-        `總計練習時間：${timeStr}<br><br>持續練習，讓身心更加平靜。`;
-    }
-  }
-
-  function stopExercise() {
-    stopRequested = true;
-    if (animFrame) cancelAnimationFrame(animFrame);
-    running = false; paused = false;
-    $exercise.classList.remove('active');
-    $completeMsg.classList.remove('active');
-    $settings.classList.remove('hidden');
-    $progressFill.style.width = '0%';
-    $circle.style.transform = 'scale(1)';
-    $glow.style.opacity = '0';
-  }
-
-  // ── Event listeners ──
-  document.getElementById('btnStart').addEventListener('click', () => {
-    if (!running) startExercise();
+  el.btnStart.addEventListener('click', startSession);
+  el.btnPause.addEventListener('click', togglePause);
+  el.btnSkip.addEventListener('click', skip);
+  el.btnStop.addEventListener('click', stop);
+  el.btnSound.addEventListener('click', toggleSound);
+  el.btnAgain.addEventListener('click', startSession);
+  el.btnBack.addEventListener('click', () => {
+    session.status = 'idle';
+    showView('settings');
+    el.btnStart.focus();
   });
 
-  document.getElementById('btnPause').addEventListener('click', () => {
-    paused = !paused;
-    document.getElementById('btnPause').textContent = paused ? '繼續' : '暫停';
+  document.addEventListener('keydown', (ev) => {
+    if (el.exercise.hidden || ev.altKey || ev.ctrlKey || ev.metaKey) return;
+    if (ev.key === 'Escape') {
+      ev.preventDefault();
+      stop();
+      return;
+    }
+    // 焦點在按鈕或欄位上時交給瀏覽器原生行為，避免一次按鍵觸發兩次
+    if ((ev.key === ' ' || ev.key === 'Spacebar') && !ev.target.closest('button, input, select, textarea, summary, a')) {
+      ev.preventDefault();
+      if (!ev.repeat) togglePause();
+    }
   });
 
-  document.getElementById('btnStop').addEventListener('click', stopExercise);
-
-  document.getElementById('btnRestart').addEventListener('click', () => {
-    $completeMsg.classList.remove('active');
-    $settings.classList.remove('hidden');
-    $progressFill.style.width = '0%';
+  // 切到背景：開著提示音就繼續（可閉眼或關螢幕練習）；沒有聲音就自動暫停，免得錯過練習
+  document.addEventListener('visibilitychange', () => {
+    if (session.status !== 'running') return;
+    if (document.hidden) {
+      if (settings.sound) audio.pump();
+      else pause(true);
+    } else if (settings.sound) {
+      audio.play(session.plan, () => elapsed());  // 重新對齊（行動裝置可能暫停過音訊時鐘）
+    }
   });
+
+  /* ═══════════════ 背景光點 ═══════════════ */
+
+  function initAmbient() {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const tints = ['94,173,242', '125,211,252', '167,139,250', '110,231,183'];
+    const box = $('ambient');
+    for (let i = 0; i < 8; i++) {
+      const s = document.createElement('span');
+      const size = Math.round(140 + Math.random() * 180);
+      s.style.width = s.style.height = `${size}px`;
+      s.style.left = `${(Math.random() * 100 - 15).toFixed(1)}%`;
+      s.style.setProperty('--c', `rgba(${tints[i % tints.length]},${(0.07 + Math.random() * 0.06).toFixed(3)})`);
+      s.style.animationDuration = `${(32 + Math.random() * 28).toFixed(1)}s`;
+      s.style.animationDelay = `${(-Math.random() * 60).toFixed(1)}s`;
+      box.append(s);
+    }
+  }
+
+  /* ═══════════════ 啟動 ═══════════════ */
+
+  initAmbient();
+  renderPresets();
+  syncInputs();
+  refreshSettings();
+  showView('settings');
 })();
 </script>
 </body>
